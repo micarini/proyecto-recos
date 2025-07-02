@@ -1,62 +1,46 @@
-const series = [
-      {
-        id: 94605,
-        title: "Arcane",
-        overview: "Las tensiones entre Piltover y Zaun aumentan con esta historia que sigue a dos hermanas y su destino en mundos enfrentados.",
-        poster_path: "/zMHKvQb6e7E8Dq5ueZv1guX4n0K.jpg"
-      },
-      {
-        id: 2,
-        title: "Adults",
-        overview: "Un grupo de veinteañeros en Nueva York intenta ser buenas personas, a pesar de no ser 'buenos' ni 'personas' aún.",
-        poster_path: ""
-      }
-    ];
+const API_KEY = '5b6f7b3773f6652670ed983c90ab0d39';
+const BASE_URL = 'https://api.themoviedb.org/3';
+const IMG_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
-    const container = document.getElementById("recommendations");
 
-    function loadViewed() {
-      const viewed = localStorage.getItem("viewedSeries");
-      return viewed ? JSON.parse(viewed) : [];
+async function searchTMDB(title, type = 'tv') {
+  const url = `${BASE_URL}/search/${type}?api_key=${API_KEY}&query=${encodeURIComponent(title)}&language=en-US`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  // Devuelve el primer resultado
+  return data.results?.[0] || null;
+}
+
+function renderCard(data) {
+  const container = document.getElementById('recommendations');
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <img src="${IMG_BASE_URL + data.poster_path}" alt="${data.name || data.title}">
+    <div class="info">
+      <h2>${data.name || data.title}</h2>
+      <p>${data.overview}</p>
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+const recommendations = [
+  { title: "Arcane", type: "tv" },
+  { title: "Adults", type: "tv" },
+  { title: "Derry Girls", type: "tv" }
+];
+
+async function loadRecommendations() {
+  for (const rec of recommendations) {
+    const result = await searchTMDB(rec.title, rec.type);
+    if (result) {
+      renderCard(result);
     }
+  }
+}
 
-    function saveViewed(viewed) {
-      localStorage.setItem("viewedSeries", JSON.stringify(viewed));
-    }
-
-    function render() {
-      const viewed = loadViewed();
-      container.innerHTML = "";
-      series.forEach(s => {
-        const card = document.createElement("div");
-        card.className = "card";
-        if (viewed.includes(s.id)) card.classList.add("viewed");
-
-        card.innerHTML = `
-          <img src="https://image.tmdb.org/t/p/w300${s.poster_path}" alt="${s.title} poster" />
-          <div>
-            <h2>${s.title}</h2>
-            <p>${s.overview}</p>
-            <button>${viewed.includes(s.id) ? "Vista ✔️" : "Marcar como vista"}</button>
-          </div>
-        `;
-
-        const btn = card.querySelector("button");
-        btn.onclick = function() {
-          let viewedNow = loadViewed();
-          if (!viewedNow.includes(s.id)) {
-            viewedNow.push(s.id);
-            saveViewed(viewedNow);
-          } else {
-            // si querés, acá podemos permitir "desmarcar" vista
-            viewedNow = viewedNow.filter(id => id !== s.id);
-            saveViewed(viewedNow);
-          }
-          render();
-        };
-
-        container.appendChild(card);
-      });
-    }
-
-    render();
+document.addEventListener('DOMContentLoaded', loadRecommendations);
